@@ -14,6 +14,7 @@ In this demo, an ARP poisoning attack is performed to intercept network traffic 
     * **Nginx proxy manager**: A reverse proxy that allows evilnginx2 to receive certificates even when behind a NAT
     * **Nextcloud**: A self-hosted file sharing and collaboration platform that will be used as the legitimate website for the phishing attack.
     * **Docker**: A platform that allows the attacker to run the necessary tools in isolated containers, making it easier to manage dependencies and configurations.
+    * **Tailscale**: A VPN service that allows to create a secure virtual network.
 
 
 * **Machines**: 
@@ -32,7 +33,9 @@ The records I have added are:
 ![cloudflare](images/Screenshot%202026-06-01%20123016.png)
 
 I also have records that point to the nextcloud instance, but they are not relevant for this demo.\
-Then I also created zone dns tokens for the SSL certificate generation. It will later be used by nginx proxy manager to generate the certificate for the fake domain.
+Then I also created zone dns tokens for the SSL certificate generation. It will later be used by nginx proxy manager to generate the certificate for the fake domain.\
+It is relevant to notice that `kali.leobloomfield.eu` points to `100.64.1.216` not to the actual private IP of the Kali machine: `192.168.1.96`. Instead it points to the IP which tailscale has assigned to it. When I tried to use the private IP, the router's DNS service would not resolve the record, while Cloudflare or Google did. So I think it's a router mitigation that prevents to resolve private IPs, but doesn't apply to tailscale.
+My setup always involved tailscale to mimich the effect of public IPs between trusted device, but it is interesting that it won't work without it.
 
 ## ARP poisoning attack
 
@@ -54,6 +57,7 @@ set dns.spoof.domains nc.leobloomfield.eu
 set dns.spoof.address 100.64.1.216
 dns.spoof on
 ```
+![bettercap](images/Screenshot%202026-06-01%20155037.png)
 
 ## Evilnginx2
 
@@ -131,7 +135,7 @@ docker run -it \
 In the evilnginx2 console I set the configuration as:
 ```bash
 config domain leobloomfield.eu
-config ipv4 192168.11.96
+config ipv4 192.168.11.96
 phishlets hostname nc leobloomfield.eu
 phislets enable nc
 ```
@@ -142,10 +146,11 @@ This is hosted behind **Nginx proxy manager**, npm, which allows it to receive t
 The configuration of **npm** is done through the web interface, where I added a new proxy host with the following settings:
 * Domain names: `fake.leobloomfield.eu`
 * Scheme: https
-* Forward hostname / IP: `192.168.11.96'
+* Forward hostname / IP: `192.168.11.96`
 * Forward port: `4433`
 and in the SSL tab I enabled the SSL certificate, using the DNS challenge and the cloudflare token I created before.\
 Lastly in the advanced settings I put:
+
 ```nginx
 proxy_ssl_server_name on;
 proxy_ssl_verify off;
