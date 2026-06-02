@@ -176,18 +176,24 @@ I also put a redirection host that when a host access the ip of kali machine but
 ![redirection](images/Screenshot%202026-06-01%20122513.png)
 
 Now when the victim tries to access `nc.leobloomfield.eu`, it will be redirected to `fake.leobloomfield.eu`. The browser **will** show a warning because my certificate for `nc.leobloomfield.eu` is self-signed, but if the victim ignores the warning and proceeds to the website, they will see a login page that looks identical to the legitimate one, with a valid certificate.\
-When the victim enters their credentials, they will be captured by Evilnginx2. If the victim has OTP enabled, the attacker can also capture the OTP and use it to log in to the legitimate website.\
+![login](images/Screenshot%202026-06-02%20145928.png)
+When the victim enters their credentials, they will be captured by Evilnginx2. If the victim has OTP enabled, the attacker can still impersonate the website and get the credentials.\
+![credentials](images/Screenshot%202026-06-02%20150023.png)
 Finally, the cookies of the victim will be captured, allowing the attacker to impersonate the victim and access their account without needing the credentials.
 
 ## Mitigations
 
-* Use HTTPS: don't ignore browser warnings about invalid certificates, and always use HTTPS to encrypt your traffic.
-* Look at the domain: always check the domain of the website you are accessing, and make sure it is the legitimate one.
-* Public Wi-Fi: avoid using public Wi-Fi networks, as they are often unsecured and can be easily compromised by ARP poisoning.
-* Trusted device: set a trusted device for your accounts to limit password exposure and also to verify that the passkey works
+* **Use HTTPS**: don't ignore browser warnings about invalid certificates, and always use HTTPS to encrypt your traffic.
+* **Look at the domain**: always check the domain of the website you are accessing, and make sure it is the legitimate one.
+* **Public Wi-Fi**: avoid using public Wi-Fi networks, as they are often insecure and can be easily compromised by ARP poisoning.
+* **Trusted device**: set a trusted device for your accounts to limit password exposure and also to verify that the passkey works
 
 ## Bibliography
-
-
+[Claude](https://claude.ai)
+[ChatGPT](https://chat.openai.com)
+[Naunet](https://www.naunet.eu/blog/9-how-to-use-evilginx-3-with-custom-certificates)
+[Evilnginx2 docs](https://help.evilginx.com/community)
+[Docker docs](https://docs.docker.com/)
+[Youtube video](https://www.youtube.com/watch?v=sZ22YulJwao&t=624s)
 
 
