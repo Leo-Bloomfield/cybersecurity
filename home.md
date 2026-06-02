@@ -9,19 +9,18 @@ In this demo, an ARP poisoning attack is performed to intercept network traffic 
 * **Threat model**:
   * The attacker is a malicious actor who has access to the same network as the victim. They can perform ARP poisoning to intercept traffic and DNS spoofing to redirect the victim's web traffic.
 * **Tools**:
-    * **Bettercap**: A simple command line tool to perform ARP poisoning and DNS spoofing attacks.
-    * **Evilnginx2**: An attacker-in-the-middle proxy tailored for phishing attacks. It can be used to create a fake website that looks identical to the legitimate one, allowing the attacker to steal credentials.
-    * **Nginx proxy manager**: A reverse proxy that allows evilnginx2 to receive certificates even when behind a NAT
-    * **Nextcloud**: A self-hosted file sharing and collaboration platform that will be used as the legitimate website for the phishing attack.
-    * **Docker**: A platform that allows the attacker to run the necessary tools in isolated containers, making it easier to manage dependencies and configurations.
-    * **Tailscale**: A VPN service that allows to create a secure virtual network.
+  * **Bettercap**: A simple command line tool to perform ARP poisoning and DNS spoofing attacks.
+	* **Evilnginx2**: An attacker-in-the-middle proxy tailored for phishing attacks. It can be used to create a fake website that looks identical to the legitimate one, allowing the attacker to steal credentials.
+	* **Nginx proxy manager**: A reverse proxy that allows evilnginx2 to receive certificates even when behind a NAT
+	* **Nextcloud**: A self-hosted file sharing and collaboration platform that will be used as the legitimate website for the phishing attack.
+	* **Docker**: A platform that allows the attacker to run the necessary tools in isolated containers, making it easier to manage dependencies and configurations.
+	* **Tailscale**: A VPN service that allows to create a secure virtual network.
 
-
-* **Machines**: 
-    * **Kali Linux**: (IP:100.64.1.216) that will run Evilnginx2 and Nginx proxy manager in Docker containers.
-    * **Windows 11**: (IP: 192.168.11.118) it will be the victim that will be targeted by the ARP poisoning and DNS spoofing attacks.
-    * **Raspberry Pi**: (IP:192.168.11.61) that will be used to perform the ARP poisoning attack using Bettercap.
-    * **Ubuntu Server**: will serve the nextcloud instance that the attacker will impersonate for the phishing attack.
+* **Machines**:
+	* **Windows 11** :(IP: 192.168.11.118) it will be the victim that will be targeted by the ARP poisoning and DNS spoofing attacks.
+  * **Kali Linux**: (IP:192.168.11.96) that will run Evilnginx2 and Nginx proxy manager in Docker containers.
+  * **Raspberry Pi**: (IP:192.168.11.61) that will be used to perform the ARP poisoning attack using Bettercap.
+  * **Ubuntu Server**: will serve the nextcloud instance that the attacker will impersonate for the phishing attack.
 
 ## Domain configuration
 
@@ -89,8 +88,10 @@ login:
 auth_urls:
   - '/apps/dashboard/'
 ```
+
 Evilnginx2 is inside a docker container.
 The **Dockerfile** is as follows:
+
 ```Dockerfile
 # Use Ubuntu 22.04 as the base image
 FROM ubuntu:22.04
@@ -116,6 +117,7 @@ VOLUME ["/phishlets", "/root/.evilginx"]
 # Define the command to run Evilginx with mounted folders
 CMD ["/app/evilginx", "-p", "/phishlets", "-c", "/root/.evilginx", "-developer"]
 ```
+
 and to run it:
 
 ```bash
@@ -132,7 +134,9 @@ docker run -it \
   --name evilginx-container \
   evilginx-image \
 ```
+
 In the evilnginx2 console I set the configuration as:
+
 ```bash
 config domain leobloomfield.eu
 config ipv4 192.168.11.96
@@ -144,10 +148,12 @@ phislets enable nc
 
 This is hosted behind **Nginx proxy manager**, npm, which allows it to receive the traffic on port 443 and forward it to the container on port 4433.\
 The configuration of **npm** is done through the web interface, where I added a new proxy host with the following settings:
+
 * Domain names: `fake.leobloomfield.eu`
 * Scheme: https
 * Forward hostname / IP: `192.168.11.96`
 * Forward port: `4433`
+
 and in the SSL tab I enabled the SSL certificate, using the DNS challenge and the cloudflare token I created before.\
 Lastly in the advanced settings I put:
 
@@ -169,17 +175,17 @@ I also put a redirection host that when a host access the ip of kali machine but
 
 ![redirection](images/Screenshot%202026-06-01%20122513.png)
 
-
-
-Now when the victim tries to access `nc.leobloomfield.eu`, it will be redirected to `fake.leobloomfield.eu`. The browser **will** show a warning because my certificate for 'nc.leobloomfield.eu' is self-signed, but if the victim ignores the warning and proceeds to the website, they will see a login page that looks identical to the legitimate one, with a valid certificate.\
+Now when the victim tries to access `nc.leobloomfield.eu`, it will be redirected to `fake.leobloomfield.eu`. The browser **will** show a warning because my certificate for `nc.leobloomfield.eu` is self-signed, but if the victim ignores the warning and proceeds to the website, they will see a login page that looks identical to the legitimate one, with a valid certificate.\
 When the victim enters their credentials, they will be captured by Evilnginx2. If the victim has OTP enabled, the attacker can also capture the OTP and use it to log in to the legitimate website.\
 Finally, the cookies of the victim will be captured, allowing the attacker to impersonate the victim and access their account without needing the credentials.
-## Mitigations:
+
+## Mitigations
 
 * Use HTTPS: don't ignore browser warnings about invalid certificates, and always use HTTPS to encrypt your traffic.
 * Look at the domain: always check the domain of the website you are accessing, and make sure it is the legitimate one.
 * Public Wi-Fi: avoid using public Wi-Fi networks, as they are often unsecured and can be easily compromised by ARP poisoning.
-* Safer two factor authentication: use a safer two factor authentication method, such as a hardware token, that cannot be easily phished.
+* Trusted device: set a trusted device for your accounts to limit password exposure and also to verify that the passkey works
+
 ## Bibliography
 
 
