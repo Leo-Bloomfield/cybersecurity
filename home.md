@@ -216,5 +216,3 @@ Finally, the cookies of the victim will be captured, allowing the attacker to im
 [Evilnginx2 docs](https://help.evilginx.com/community)
 [Docker docs](https://docs.docker.com/)
 [Youtube video](https://www.youtube.com/watch?v=sZ22YulJwao&t=624s)
-
-
