@@ -199,7 +199,16 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem \
 
 ![redirection](images/Screenshot%202026-06-01%20122513.png)
 
-Now when the victim tries to access `nc.leobloomfield.eu`, it will be redirected to `fake.leobloomfield.eu`. The browser **will** show a warning, before the redirection, because my certificate for `nc.leobloomfield.eu` is self-signed, but if the victim ignores the warning and proceeds to the website, they will see a login page that looks identical to the legitimate one, with a valid certificate.
+Now when the victim tries to access `nc.leobloomfield.eu`, it will be redirected to `fake.leobloomfield.eu`.\
+The browser will show two kinds of warnings\
+If the user has already navigated to `nc.leobloomfield.eu` before, the browser will show a warning about the certificate being invalid under **HSTS** policy. It prevents an attacker from downgrading the connection to HTTP or to use a self-signed certificate.\ 
+![HSTS](images/Screenshot%202026-06-04%20110522.png)
+
+If you remove the HSTS data regarding `nc.leobloomfield.eu` or you use another browser then you get a second type of error, simply saying that that certificate is self-signed. In this case you can ignore the warning and proceed to the website.
+![self-signed](images/Screenshot%202026-06-04%20110535.png)
+This is an important mitigation. If the original site has HSTS enabled then the victim will be completely unable to reach the fake webiste. Only by removing data or using a different browser it's possible.\
+The warning of the self-signed certificate, in the second case, is a strong mitigation, but the user can ignore it.
+If the user reaches the fake website, they will see a login page that looks identical to the legitimate one, and valid credentials provided by a reputable Certificate Authority.
 ![login](images/Screenshot%202026-06-02%20145928.png)
 When the victim enters their credentials, they will be captured by Evilnginx2. If the victim has OTP enabled, the attacker can still impersonate the website and get the credentials, since evilnginx2 proxies in real time.
 ![credentials](images/Screenshot%202026-06-02%20150023.png)
