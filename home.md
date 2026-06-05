@@ -34,8 +34,8 @@ In this demo, an **ARP poisoning** attack is performed to intercept network traf
 
 Because this is self-contained demo, I have used a domain I already own ``leobloomfield.eu`` managed by cloudflare. 
 The records I have added are:
-``kali.leobloomfield.eu A 100.64.1.216``
-``fake.leobloomfield.eu CNAME kali.leobloomfield.eu``
+* ``kali.leobloomfield.eu A 100.64.1.216``
+* ``fake.leobloomfield.eu CNAME kali.leobloomfield.eu``
 
 ![cloudflare](images/Screenshot%202026-06-01%20123016.png)
 
