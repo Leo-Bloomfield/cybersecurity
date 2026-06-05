@@ -201,7 +201,8 @@ openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem \
 
 Now when the victim tries to access `nc.leobloomfield.eu`, it will be redirected to `fake.leobloomfield.eu`.\
 The browser will show two kinds of warnings\
-If the user has already navigated to `nc.leobloomfield.eu` before, the browser will show a warning about the certificate being invalid under **HSTS** policy. It prevents an attacker from downgrading the connection to HTTP or to use a self-signed certificate.\ 
+If the user has already navigated to `nc.leobloomfield.eu` before, the browser will show a warning about the certificate being invalid under **HSTS** policy. It prevents an attacker from downgrading the connection to HTTP or to use a self-signed certificate.
+
 ![HSTS](images/Screenshot%202026-06-04%20110522.png)
 
 If you remove the HSTS data regarding `nc.leobloomfield.eu` or you use another browser then you get a second type of error, simply saying that that certificate is self-signed. In this case you can ignore the warning and proceed to the website.
