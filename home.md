@@ -224,9 +224,9 @@ Finally, the cookies of the victim will be captured, allowing the attacker to im
 
 ## Bibliography
 
-[Claude](https://claude.ai)
-[ChatGPT](https://chat.openai.com)
-[Article explaining evilnginx2 in Docker](https://www.naunet.eu/blog/9-how-to-use-evilginx-3-with-custom-certificates)
-[Evilnginx2 docs](https://help.evilginx.com/community)
-[Docker docs](https://docs.docker.com/)
+[Claude](https://claude.ai)\
+[ChatGPT](https://chat.openai.com)\
+[Article explaining evilnginx2 in Docker](https://www.naunet.eu/blog/9-how-to-use-evilginx-3-with-custom-certificates)\
+[Evilnginx2 docs](https://help.evilginx.com/community)\
+[Docker docs](https://docs.docker.com/)\
 [Youtube video](https://www.youtube.com/watch?v=sZ22YulJwao&t=624s)
